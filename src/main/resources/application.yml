@@ -1,0 +1,171 @@
+spring:
+  profiles:
+    active: dev
+  
+  application:
+    name: time-recorder
+    
+  jpa:
+    open-in-view: false
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 50
+          order_inserts: true
+          order_updates: true
+        connection:
+          provider_disables_autocommit: true
+    hibernate:
+      ddl-auto: validate
+
+  datasource:
+    hikari:
+      minimum-idle: 2
+      maximum-pool-size: 10
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      connection-timeout: 20000
+      validation-timeout: 5000
+      leak-detection-threshold: 60000
+
+server:
+  port: 8080
+  compression:
+    enabled: true
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+app:
+  time-recording:
+    interval-seconds: 1
+    recovery-interval-seconds: 5
+    shutdown-timeout-seconds: 10
+
+logging:
+  level:
+    root: INFO
+    com.leon.testtask: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+      
+  datasource:
+    url: jdbc:postgresql://localhost:5432/timerecorder
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+logging:
+  level:
+    com.leon.testtask: DEBUG
+    org.springframework.web: DEBUG
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+      
+  datasource:
+    url: jdbc:postgresql://postgres:5432/timerecorder
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+logging:
+  level:
+    root: INFO
+    com.leon.testtask: INFO
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+      
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/timerecorder}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+app:
+  time-recording:
+    interval-seconds: ${TIME_RECORDING_INTERVAL:1}
+    recovery-interval-seconds: ${DATABASE_RECOVERY_INTERVAL:5}
+
+logging:
+  level:
+    root: WARN
+    com.leon.testtask: INFO
+    org.springframework.web: WARN
+  file:
+    name: logs/time-recorder.log
+
+---
+spring:
+  config:
+    activate:
+      on-profile: integration-test
+      
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+app:
+  time-recording:
+    interval-seconds: 1
+    recovery-interval-seconds: 1
+    shutdown-timeout-seconds: 5
+
+logging:
+  level:
+    com.leon.testtask: INFO
+    org.springframework.web: WARN
+    org.testcontainers: WARN
